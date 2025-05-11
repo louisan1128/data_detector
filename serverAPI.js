@@ -2,18 +2,41 @@ const express = require('express');
 const fs = require('fs');
 const path = require('path');
 const app = express();
+const { MongoClient } = require('mongodb')
 const port = 3000;
+
+//mongodb 연결
+const url = 'mongodb://localhost:27017';
+const client = new MongoClient(url);
+const dbName = 'data_detector'
+
+const collectionPromise = client.connect().then(() => {
+    console.log("DB 연결");
+    return client.db(dbName).collection('change_logs');
+});
 
 app.use(express.json());
 
 //post 요청
-app.post('/alert', (req, res) => {
-    const { timestamp, oldHash, newHash } = req.body;
+app.post('/alert', async (req, res) => {
+    const { timestamp, oldHash, newHash, filename } = req.body;
     console.log("변경감지");
+
     const log = `!!변경 감지!!\n[${timestamp}]\n
+        파일명: ${filename}\n
         이전 해시: ${oldHash}\n
         현재 해시: ${newHash}\n\n`
     fs.appendFileSync('change_log.txt', log);
+
+    const collection = await collectionPromise;
+    await collection.insertOne({
+        filename: filename,
+        oldHash: oldHash,
+        newHash: newHash,
+        timestamp: timestamp,
+        currentTime: new Date()
+    });
+
     res.send('알림 수신 완료');
 });
 
