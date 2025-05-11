@@ -3,6 +3,8 @@ import time
 import datetime
 import requests
 
+#해시
+
 TARGET_FILE = 'target_file.txt'
 API_URL = 'http://localhost:3000/alert'
 
