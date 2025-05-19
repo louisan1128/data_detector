@@ -8,10 +8,23 @@
   "keywords": [],
   "author": "",
   "license": "ISC",
-  "description": "",
+  "description": "블록체인 데이터 이력관리 시스템",
   "dependencies": {
     "express": "^5.1.0",
+    "ipfs-api": "^26.1.2",
     "mongodb": "^6.16.0",
     "mongoose": "^8.14.2"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/louisan1128/data_detector.git"
+  },
+  "bugs": {
+    "url": "https://github.com/louisan1128/data_detector/issues"
+  },
+  "homepage": "https://github.com/louisan1128/data_detector#readme",
+  "devDependencies": {
+    "@nomicfoundation/hardhat-toolbox": "^5.0.0",
+    "hardhat": "^2.24.0"
   }
 }

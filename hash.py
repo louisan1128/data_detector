@@ -4,6 +4,8 @@ import datetime
 import requests
 import pymongo
 import os
+import ipfshttpclient
+from web3 import Web3
 
 # TARGET_FILE = 'target_file.txt'
 TARGET_FOLDER = './target_folder'
@@ -13,7 +15,11 @@ API_URL = 'http://localhost:3000/alert'
 client = pymongo.MongoClient('mongodb://localhost:27017/')
 db = client['data_detector']
 collection = db['data']
+#ipfs 연결
+ipfs = ipfshttpclient.connect('/ip4/127.0.0.1/tcp/5001')
 
+
+####함수######
 #해시 생성
 def get_hash(file):
     with open(file, 'rb') as f:
@@ -26,10 +32,12 @@ def log(text):
     current_time = datetime.datetime.now().strftime("%Y-%m-%d %H:%M:%S")  
     print(f"[{current_time}] {text}")
 
+
+#############
+
+
 #초기 해시값 저장
-# original_hash = get_hash(TARGET_FILE)
-# log("초기 해시값: " + original_hash[:12])
-collection.delete_many({})
+collection.delete_many({}) #초기화
 for file in os.listdir(TARGET_FOLDER) :
     path = os.path.join(TARGET_FOLDER, file).replace("\\", "/")
     file_hash = get_hash(path)
@@ -41,6 +49,8 @@ for file in os.listdir(TARGET_FOLDER) :
         "last_modified": datetime.datetime.now().strftime("%Y-%m-%d %H:%M:%S")
     })
     log(f"{file}등록됨. 해시값: {file_hash[:12]}")
+
+
 
 #감시 루프
 while True:
@@ -95,23 +105,4 @@ while True:
     if not change:
         log("변경없음. 해시 동일.")
             
-
-
-    # current_hash = get_hash(TARGET_FILE)
-    # if current_hash != original_hash:
-    #     current_time = datetime.datetime.now()
-    #     log("!!변경 감지!!")
-    #     print(f"이전 해시: {original_hash[:12]}...")
-    #     print(f"현재 해시: {current_hash[:12]}...")
-
-    #     res = requests.post(API_URL, json={
-    #         'timestamp': current_time.isoformat(),
-    #         'oldHash' : original_hash,
-    #         'newHash' : current_hash
-    #     })
-    #     log(f"서버 응답: {res.text}")
-
-    #     original_hash = current_hash
-    # else:
-    #     log("변경없음. 해시 동일.")
 

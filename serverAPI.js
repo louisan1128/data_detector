@@ -34,7 +34,6 @@ app.post('/alert', async (req, res) => {
         oldHash: oldHash,
         newHash: newHash,
         timestamp: timestamp,
-        currentTime: new Date()
     });
 
     res.send('알림 수신 완료');
