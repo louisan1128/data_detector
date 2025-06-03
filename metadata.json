@@ -1,0 +1,17 @@
+{
+  "@context": [
+    "https://www.w3.org/2018/credentials/v1",
+    "https://www.pdaas.com/vdb/v1"
+  ],
+  "id": "did:vdb:datadetector-001",
+  "data_log": {
+    "fileChangeLog": {
+      "timestamp": "2025-06-03 03:10:55",
+      "filename": "file3.txt",
+      "oldHash": "cf6f307d949f0eca2eb6bc00f0cd0166a77610490c89dbaebede9f3799c738e7",
+      "newHash": "eb092cacc4409f92615192de146dadd3f89eb2f666f9e91f9fb6034963a834d1",
+      "ipfsCID": "bafkreies3ua73lrxe6au2kufgaskwbqye7swlkw7t5mmksjwhmozdwyvgq",
+      "blockchainTxHash": "0x126010dc8bd4dce5a09c3db212b868a4e5055763a8c1c403e7c879ccbff31d9b"
+    }
+  }
+}

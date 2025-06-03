@@ -1,0 +1,38 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+  <meta charset="UTF-8">
+  <title>로그 목록</title>
+</head>
+<body>
+  <h1> IPFS 로그</h1>
+  <button onclick="window.location.href='/'">돌아가기</button>
+  <ul id="logList"></ul>
+
+  <script>
+    async function loadLogs() {
+      const res = await fetch('/logs');
+      const cids = await res.json();
+
+      const ul = document.getElementById('logList');
+      
+      if (cids.length === 0) {
+        ul.innerHTML = "<li>저장된 로그가 없습니다.</li>";
+        return; //종료
+      }
+
+      for (const cid of cids) {
+        const res = await fetch(`https://gateway.pinata.cloud/ipfs/${cid}`);
+        const data = await response.json();
+
+        const li = document.createElement('li');
+        //문자열로 변환
+        li.textContent = JSON.stringify(data, null, 2);
+        ul.appendChild(li);
+      }
+    }
+
+    loadLogs();
+  </script>
+</body>
+</html>

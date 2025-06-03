@@ -1,0 +1,43 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+  <meta charset="UTF-8" />
+  <title>IPFS CID 조회 및 다운로드</title>
+</head>
+<body>
+    <h1>파일 변경 감지 시스템</h1>
+    <button onclick="location.href='/logs'">로그 확인</button>
+    <button onclick="downloadLogs()">로그 다운로드</button>
+</body>
+
+<script>
+    async function downloadLogs() {
+      const res = await fetch('/logs');
+      const cids = await res.json();
+
+      if (!cids.length) return alert("로그가 없습니다.");
+
+      //다운로드
+      for (const cid of cids) {
+        const res = await fetch(`https://gateway.pinata.cloud/ipfs/${cid}`)
+        const text = await res.text()
+
+        //텍스트파일 만들고 URL 생성
+        const Blob = new Blob([text], {type: 'text/plain'})
+        const fileURL = URL.createObjectURL(Blob)
+        
+        //다운로드 링크
+        const downloadLink = document.createElement('a');
+        downloadLink.href = fileURL;
+        downloadLink.download = `metadata_${cid}.txt`;
+
+        //다운로드
+        downloadLink.click();
+
+        //url해제
+        URL.revokeObjectURL(fileURL);
+      }
+    }
+  </script>
+  
+</html>

@@ -4,14 +4,22 @@ pragma solidity ^0.8.28;
 // Uncomment this line to use console.log
 // import "hardhat/console.sol";
 
-contract dataDetector {
-    string public icd; 
 
-    event CIDupdate(string oldCID, string newCID);
+import "@openzeppelin/contracts/token/ERC721/extensions/ERC721URIStorage.sol";
+import "@openzeppelin/contracts/access/Ownable.sol";
 
-    function updateCID(string calldata newCID) external {
-        string memory oldcid = cid;
-        cid = newCID;
-        emit CIDUpdate(oldCID, newCID);
+
+
+contract dataDetector is Ownable {
+    string[] public cids; 
+
+    event CIDAdd(string cid, uint timestamp);
+
+    constructor(address initialOwner) Ownable(initialOwner) {}
+
+    function addCID(string calldata cid) external {
+        cids.push(cid);
+        emit CIDAdd(cid, block.timestamp);
     }
 }
+

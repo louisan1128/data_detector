@@ -1,92 +1,131 @@
+require("dotenv").config();
 const express = require('express');
+const axios = require("axios");
+const FormData = require("form-data");
 const fs = require('fs');
 const path = require('path');
+const { Web3 } = require("web3");
+
 const app = express();
-const { MongoClient } = require('mongodb')
-const port = 3000;
+const port = 3000;  
 
-//mongodb 연결
-const url = 'mongodb://localhost:27017';
-const client = new MongoClient(url);
-const dbName = 'data_detector'
-
-const collectionPromise = client.connect().then(() => {
-    console.log("DB 연결");
-    return client.db(dbName).collection('change_logs');
-});
 
 app.use(express.json());
+app.use(express.static('public'));
+
+
+
+// Web3 & 스마트 컨트랙트 설정
+const web3 = new Web3('http://localhost:8545');
+const contractABI = require('./contractABI.json');
+const contractAddress = '0xdc64a140aa3e981100a9beca4e685f962f0cf6c9';  
+const privateKey = '0xac0974bec39a17e36ba4a6b4d238ff944bacb478cbed5efcae784d7bf4f2ff80';          
+const account = web3.eth.accounts.privateKeyToAccount(privateKey);
+const contract = new web3.eth.Contract(contractABI, contractAddress);
+web3.eth.accounts.wallet.add(account);
+
+
+//CID 리스트
+const CIDs = [];
+ 
+//메타 데이터 생성 PINATA 업로드 함수
+async function uploadMetadataToPinata(metadata) {
+    const filePath = path.join(__dirname, "metadata.json");
+    fs.writeFileSync(filePath, JSON.stringify(metadata, null, 2));
+
+    const form = new FormData();
+    form.append("file", fs.createReadStream(filePath));
+    form.append("name", "file-change.json");
+    form.append("network", "public");
+
+    const res = await axios.post("https://uploads.pinata.cloud/v3/files", form, {
+        headers: {
+            ...form.getHeaders(),
+            Authorization: `Bearer ${process.env.PINATA_JWT}`,
+        }
+    });
+
+    return res.data.data.cid;
+}
+
+//블록체인에 CID 기록
+async function recordCIDOnBlockchain(cid) {
+    const tx = await contract.methods.addCID(cid).send({
+        from: account.address,
+        gas: 200000,
+    });
+    return tx.transactionHash;
+}
+
 
 //post 요청
 app.post('/alert', async (req, res) => {
-    const { timestamp, oldHash, newHash, filename } = req.body;
-    console.log("변경감지");
+    try {
+        console.log("받은 데이터:", req.body);
 
-    const log = `!!변경 감지!!\n[${timestamp}]\n
-        파일명: ${filename}\n
-        이전 해시: ${oldHash}\n
-        현재 해시: ${newHash}\n\n`
-    fs.appendFileSync('change_log.txt', log);
+        const { timestamp, oldHash, newHash, filename } = req.body;
 
-    const collection = await collectionPromise;
-    await collection.insertOne({
-        filename: filename,
-        oldHash: oldHash,
-        newHash: newHash,
-        timestamp: timestamp,
-    });
+        //메타 데이터 만들기
+        let metadata = {
+            "@context": [
+                "https://www.w3.org/2018/credentials/v1",
+                "https://www.pdaas.com/vdb/v1"
+            ],
+            "id": "did:vdb:datadetector-001",
+            "data_log": {
+                "fileChangeLog": {
+                    timestamp,
+                    filename,
+                    oldHash,
+                    newHash,
+                    ipfsCID: "",
+                    blockchainTxHash: ""
+                }
+            }
+        };
 
-    res.send('알림 수신 완료');
+        //IPFS에 메타데이터 업로드
+        const cid = await uploadMetadataToPinata(metadata);
+        metadata.data_log.fileChangeLog.ipfsCID = cid;
+
+        //블록체인에 CID 기록
+        const txHash = await recordCIDOnBlockchain(cid);
+        metadata.data_log.fileChangeLog.blockchainTxHash = txHash;
+
+        //최종 메타데이터 넣기
+        const finalCID = await uploadMetadataToPinata(metadata);
+        //메타데이터 다시 작성
+        const updatedPath = path.join(__dirname, "metadata.json");
+        fs.writeFileSync(updatedPath, JSON.stringify(metadata, null, 2));
+
+        console.log("IPFS CID:", finalCID);
+        console.log("블록체인 TxHash:", txHash);
+
+        res.json({
+            message: "변경 로그 저장 완료",
+            finalCID,
+            txHash
+        });
+
+        //프론트용
+        CIDs.push(finalCID)
+
+    }catch (err) {
+        console.error("오류 발생");
+        res.status(500).send("서버 오류");
+    }
 });
 
-//로그파일 다운로드
+// CID 목록 반환 API
 app.get('/logs', (req, res) => {
-    const filePath = path.join(__dirname, 'change_log.txt');
-    if(fs.existsSync(filePath)) {
-        res.download(filePath, 'change_log.txt');
-    } else {
-        res.send('로그 파일이 없습니다');
-    }
+    res.json(CIDs);
 });
 
-//로그 표시
-app.get('/logs_record', (req, res) => {
-    const filePath = path.join(__dirname, 'change_log.txt');
-    if(fs.existsSync(filePath)) {
-        const logs = fs.readFileSync(filePath, 'utf-8');
-        res.send(`
-            <html>
-                <head>
-                    <meta charset="utf-8">
-                    <title>로그 기록</title>
-                </head>
-                <body>
-                    <h1>로그 기록</h1>
-                    <pre>${logs}</pre>
-                    <p><a href="/"> 돌아가기 </a></p>
-                </body>
-            </html>`);
-    } else {
-        res.send('로그 파일이 없습니다.');
-    }
-});
 
-//홈페이지
-app.get('/', (req, res) => {
-    res.send(`
-            <html>
-                <head>
-                    <meta charset="utf-8">
-                    <title>API서버</title>
-                </head>
-                <body>
-                    <h1>서버 실행중</h1>
-                    <p><a href="/logs_record/"> 로그 기록 보기 </a></p>
-                    <p><a href="/logs"> 로그 기록 다운로드 </a></p>
-                </body>
-            </html>`);
-});
+
 
 app.listen(port, () => {
     console.log(`서버 실행 중: http://localhost:${port}`);
 });
+
+
