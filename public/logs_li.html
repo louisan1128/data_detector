@@ -23,12 +23,21 @@
 
       for (const cid of cids) {
         const res = await fetch(`https://gateway.pinata.cloud/ipfs/${cid}`);
-        const data = await response.json();
+        const data = await res.json(); 
+        const log = data?.data_log?.fileChangeLog;
+          if (!log) continue;
 
-        const li = document.createElement('li');
-        //문자열로 변환
-        li.textContent = JSON.stringify(data, null, 2);
-        ul.appendChild(li);
+        
+        ul.insertAdjacentHTML('beforeend', `
+          <li>
+            <h3>파일 이름: ${log.filename}</h3>
+            <p>변경 시각: ${log.timestamp}</p>
+            <p>이전 해시: <code>${log.oldHash}</code></p>
+            <p>새로운 해시: <code>${log.newHash}</code></p>
+            <p>IPFS CID: <a class="cid-link" href="https://gateway.pinata.cloud/ipfs/${log.ipfsCID}" target="_blank">${log.ipfsCID}</a></p>
+            <p>블록체인 트랜잭션: <code>${log.blockchainTxHash}</code></p>
+          </li>
+        `);
       }
     }
 

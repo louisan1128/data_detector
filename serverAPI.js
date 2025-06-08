@@ -18,7 +18,7 @@ app.use(express.static('public'));
 // Web3 & 스마트 컨트랙트 설정
 const web3 = new Web3('http://localhost:8545');
 const contractABI = require('./contractABI.json');
-const contractAddress = '0xdc64a140aa3e981100a9beca4e685f962f0cf6c9';  
+const contractAddress = '0x5fbdb2315678afecb367f032d93f642f64180aa3';  
 const privateKey = '0xac0974bec39a17e36ba4a6b4d238ff944bacb478cbed5efcae784d7bf4f2ff80';          
 const account = web3.eth.accounts.privateKeyToAccount(privateKey);
 const contract = new web3.eth.Contract(contractABI, contractAddress);
@@ -99,7 +99,7 @@ app.post('/alert', async (req, res) => {
         fs.writeFileSync(updatedPath, JSON.stringify(metadata, null, 2));
 
         console.log("IPFS CID:", finalCID);
-        console.log("블록체인 TxHash:", txHash);
+        console.log("블록체인 TxHash:\n", txHash);
 
         res.json({
             message: "변경 로그 저장 완료",
@@ -122,7 +122,9 @@ app.get('/logs', (req, res) => {
 });
 
 
-
+app.get('/logs_li', (req, res) => {
+  res.sendFile(path.join(__dirname, 'public', 'logs_li.html'));
+});
 
 app.listen(port, () => {
     console.log(`서버 실행 중: http://localhost:${port}`);

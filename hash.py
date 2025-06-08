@@ -13,22 +13,32 @@ API_URL = 'http://localhost:3000/alert'
 
 
 
-
-
 #mongodb 연결
 client = pymongo.MongoClient("mongodb://admin:seunghwanan@localhost:27017/admin")
 db = client['data_detector']
 collection = db['data']
 
+# MongoDB Change Stream 감시 함수
+
+
+
 #mongod.log 추출
 mongo_log_path = 'C:\Program Files\MongoDB\Server\8.0\bin'
-temp_log_path = 'mongo_log.txt'
+temp_log_path = 'mongod.log.txt'
 
-def failed_mongo_logs():
+def accessed_failed_mongod():
     logs = []
     with open(mongo_log_path, 'r', encoding = 'utf-8') as f:
         for line in f:
             if 'Authentication failed' in line or 'Failed to authenticate' in line:
+                    logs.append(line)
+    return logs
+
+def accessed_succeeded_mongod():
+    logs = []
+    with open(mongo_log_path, 'r', encoding = 'utf-8') as f:
+        for line in f:
+            if 'Authentication succeeded' in line or 'Successfully authenticated' in line:
                     logs.append(line)
     return logs
 
